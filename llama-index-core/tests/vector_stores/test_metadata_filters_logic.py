@@ -135,6 +135,24 @@ def test_ne_and_nin_match_missing_metadata_values() -> None:
     assert nin_fn("n1")
 
 
+@pytest.mark.parametrize(
+    "operator",
+    [FilterOperator.GT, FilterOperator.GTE, FilterOperator.LT, FilterOperator.LTE],
+)
+def test_range_filters_skip_values_of_incomparable_type(
+    operator: FilterOperator,
+) -> None:
+    filters = MetadataFilters(
+        filters=[MetadataFilter(key="rank", operator=operator, value=0)]
+    )
+
+    filter_fn = build_metadata_filter_fn(_METADATA_BY_ID.__getitem__, filters)
+
+    # "rank" holds strings, which can't be ordered against an int, so no node
+    # matches and the query doesn't fail with a TypeError.
+    assert [node_id for node_id in _METADATA_BY_ID if filter_fn(node_id)] == []
+
+
 def test_text_match_insensitive_uses_case_insensitive_search() -> None:
     filters = MetadataFilters(
         filters=[
